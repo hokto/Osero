@@ -1,9 +1,11 @@
 require "./Algorithm"
 require "./Handy"
+require "socket"
 
 def Main()#MainFunction
 	side=10#SideLength
 	puts "Please input your turn" 
+    #Send message of "Recruit" to server
     inputTurn=gets.chomp
     case inputTurn 
     when "black" then
@@ -17,25 +19,41 @@ def Main()#MainFunction
 	board[side/2-1][side/2],board[side/2][side/2-1]=-1,-1
 	counter=0
 	Print(board)
+    boardInfo=0 #0:first 1:midium 2:final
+    pathcnt=0
     while true
+      break if pathcnt>=2
+        if counter.between?(side**2/3,side**2/3*2)
+          boardInfo=1
+        elsif counter.between?(side**2/3*2,side**2-1)
+          boardInfo=2
+        end
         white,black=CheckPieces(board,side)
         puts "White:#{white} Black:#{black}"
 		if turn!=$myturn
-			input=gets.chomp.split(",")#input[0]=y input[1]=x
+			input=gets.chomp.split(",")#input[0]=x input[1]=y
+          if $bestPos==nil
+            $bestPos=Pos.new(-1,-1)
+          end
+          #input=Socket($bestPos.x.to_s+","+$bestPos.y.to_s)
 		else
 			$level=4
             if FullMap?(board,side).zero?
                 break
-            elsif $level>=96-counter
-			  $level=96-counter
+            elsif $level>=side**2-4-counter
+			  $level=side**2-4-counter
             end
-			MinMax(Marshal.load(Marshal.dump(board)),turn,side,$level)
+			#MinMax(Marshal.load(Marshal.dump(board)),turn,side,$level,boardInfo)
 			#MonteCarlo(Marshal.load(Marshal.dump(board)),turn,side,2,0)
+			AlphaBeta(Marshal.load(Marshal.dump(board)),turn,side,$level,boardInfo)
 			input=[]
 			if($bestPos.x==-1 and $bestPos.y==-1)
 					puts "Path"
 					turn*=-1
+                    pathcnt+=1
 					next
+            else
+              pathcnt=0
 			end
 			input[0],input[1]=$bestPos.x,$bestPos.y
             p input
@@ -43,7 +61,10 @@ def Main()#MainFunction
 		break if input[0]=="stop"
 		if input[0]=="path"
 				turn*=-1
+                pathcnt+=1
 				next
+        else
+          pathcnt=0
 		end
 		pos=Pos.new(input[0].to_i,input[1].to_i)
 		if Put?(pos.dup,board,turn,side)
@@ -87,16 +108,23 @@ def Judge(pos,judgeboard,turn,side,dirX,dirY)#Actually confirm whether to put pi
 		end
 	end
 end
+
 def Print(board)#Print the current board
+  print " "
+  (board.size).times do|i|
+    print " #{i}"
+  end
+    print "\n"
 		(board.size).times do|i|
+          print"#{i}"
 				(board.size).times do|j|
 						case board[i][j]
 						when 0 then
-								print "□"
+								print " □"
 						when 1 then
-								print "○"
+								print " ○"
 						when -1 then
-								print "●" 
+								print " ●" 
 						end
 				end
 				print "\n"
@@ -109,12 +137,23 @@ def CheckPieces(board,side)
       side.times do|j|
         case board[i][j]
         when 1 then
-          white+=1
-        when -1 then
           black+=1
+        when -1 then
+          white+=1
         end
       end
     end 
     return white,black
+end 
+
+def Socket(sendMessage)
+    ipAddress=Socket.getifaddrs.select{|x|
+      x.name=="en0" and x.addr.ipv4?
+    }.first.addr.ip_address
+    connect=TCPSocket.open(ipAddress,50000)
+    connect.puts sendMessage
+    receivePos=connect.gets.chomp.split(",").map(&:to_i)
+    connect.close
+    return receivePos
 end
 Main()

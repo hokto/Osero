@@ -1,7 +1,7 @@
 require "./Handy"
 
-$bestPos=nil
-def MinMax(board,turn,side,depth)#MinMaxAlgorithm
+$bestPos=nil#AI dicited Optimal position
+def MinMax(board,turn,side,depth,boardInfo)#MinMaxAlgorithm
 	$bestPos=Pos.new(-1,-1)
 	evaboard=[]
 	File.open("./Evaboard.txt",mode="rt"){
@@ -11,11 +11,11 @@ def MinMax(board,turn,side,depth)#MinMaxAlgorithm
 					evaboard.push(line.split(",").map(&:to_i))
 			}
 	}
-	return MaxAlgo(board,evaboard,turn,side,depth)
+	return MaxAlgo(board,evaboard,turn,side,depth,boardInfo)
 end
 
-def MaxAlgo(board,evaboard,turn,side,depth)
-	return CarcuEva(board,evaboard,turn,side) if depth.zero?
+def MaxAlgo(board,evaboard,turn,side,depth,boardInfo)
+	return CarcuEva(board,evaboard,turn,side,boardInfo) if depth.zero?
 	max=-10**9
 	pos=Pos.new(-1,-1)
 	side.times do|i|
@@ -23,7 +23,7 @@ def MaxAlgo(board,evaboard,turn,side,depth)
 					cpboard=Marshal.load(Marshal.dump(board))
 					if Put?(Pos.new(j,i),cpboard,turn,side)
 							cpboard[i][j]=turn
-							score=MinAlgo(cpboard,evaboard,turn*-1,side,depth-1)
+							score=MinAlgo(cpboard,evaboard,turn*-1,side,depth-1,boardInfo)
 							if score>max
 								max=score
 								pos=Pos.new(j,i)
@@ -35,8 +35,8 @@ def MaxAlgo(board,evaboard,turn,side,depth)
 	return max
 end
 
-def MinAlgo(board,evaboard,turn,side,depth)
-	return CarcuEva(board,evaboard,turn,side) if depth.zero?
+def MinAlgo(board,evaboard,turn,side,depth,boardInfo)
+	return CarcuEva(board,evaboard,turn,side,boardInfo) if depth.zero?
 	min=10**9
     pos=Pos.new(-1,-1)
 	side.times do|i|
@@ -44,7 +44,7 @@ def MinAlgo(board,evaboard,turn,side,depth)
 					cpboard=Marshal.load(Marshal.dump(board))
 					if Put?(Pos.new(j,i),cpboard,turn,side)
 							cpboard[i][j]=turn
-							score=MaxAlgo(cpboard,evaboard,turn*-1,side,depth-1)
+							score=MaxAlgo(cpboard,evaboard,turn*-1,side,depth-1,boardInfo)
 							if score<min
 									min=score
 							end
@@ -106,6 +106,60 @@ def MonteCarlo(board,turn,side,width,turnNum)#MonteCarloAlgorithm
 	end
 end
 
-def AlphaBeta()#AlphaBetaAlgorithm
-	
+def AlphaBeta(board,turn,side,depth,boardInfo)#AlphaBetaAlgorithm
+	$bestPos=Pos.new(-1,-1)
+	evaboard=[]
+	File.open("./Evaboard.txt",mode="rt"){
+			|file|
+			file.each_line{
+				|line|
+					evaboard.push(line.split(",").map(&:to_i))
+			}
+	}
+	return AlphaAlgo(board,evaboard,turn,side,depth,boardInfo,-10**9,10**9)	
+end
+
+def AlphaAlgo(board,evaboard,turn,side,depth,boardInfo,alpha,beta)
+	return CarcuEva(board,evaboard,turn,side,boardInfo) if depth.zero?
+	pos=Pos.new(-1,-1)
+	side.times do|i|
+			side.times do|j|
+					cpboard=Marshal.load(Marshal.dump(board))
+					if Put?(Pos.new(j,i),cpboard,turn,side)
+							cpboard[i][j]=turn
+							score=AlphaAlgo(cpboard,evaboard,turn*-1,side,depth-1,boardInfo,alpha,beta)
+                            if score>alpha
+                                alpha=score
+                                pos=Pos.new(j,i)
+                                if alpha>=beta
+                                  $bestPos=Pos.new(j,i) if depth==$level
+                                  return beta
+                                end
+                            end
+					end
+			end
+	end
+	$bestPos=pos if depth==$level
+	return alpha 
+end
+
+def BetaAlgo(board,evaboard,turn,side,depth,boardInfo,alpha,beta)
+	return CarcuEva(board,evaboard,turn,side,boardInfo) if depth.zero?
+    pos=Pos.new(-1,-1)
+	side.times do|i|
+			side.times do|j|
+					cpboard=Marshal.load(Marshal.dump(board))
+					if Put?(Pos.new(j,i),cpboard,turn,side)
+							cpboard[i][j]=turn
+							score=BetaAlgo(cpboard,evaboard,turn*-1,side,depth-1,boardInfo)
+                            if score<beta
+                              beta=score
+                              if beta<=alpha
+                                return alpha
+                              end
+                            end
+					end
+			end
+	end
+	return beta
 end
