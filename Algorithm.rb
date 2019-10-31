@@ -122,44 +122,44 @@ end
 def AlphaAlgo(board,evaboard,turn,side,depth,boardInfo,alpha,beta)
 	return CarcuEva(board,evaboard,turn,side,boardInfo) if depth.zero?
 	pos=Pos.new(-1,-1)
-	side.times do|i|
-			side.times do|j|
-					cpboard=Marshal.load(Marshal.dump(board))
-					if Put?(Pos.new(j,i),cpboard,turn,side)
-							cpboard[i][j]=turn
-							score=AlphaAlgo(cpboard,evaboard,turn*-1,side,depth-1,boardInfo,alpha,beta)
-                            if score>alpha
-                                alpha=score
-                                pos=Pos.new(j,i)
-                                if alpha>=beta
-                                  $bestPos=Pos.new(j,i) if depth==$level
-                                  return beta
-                                end
-                            end
-					end
-			end
-	end
+        posList=CanPut(board,turn,side)
+        posList=SortNode(board,evaboard,turn,side,boardInfo,posList,1) if depth>=3
+        posList.each do|putPos|
+	  cpboard=Marshal.load(Marshal.dump(board))
+          currentPos=putPos
+          Put?(currentPos,cpboard,turn,side)
+          cpboard[currentPos.y][currentPos.x]=turn
+	    score=AlphaAlgo(cpboard,evaboard,turn*-1,side,depth-1,boardInfo,alpha,beta)
+            if score>alpha
+              alpha=score
+              pos=currentPos
+              if alpha>=beta
+                $bestPos=currentPos if depth==$level
+                return beta
+              end
+            end
+        end
 	$bestPos=pos if depth==$level
 	return alpha 
 end
 
 def BetaAlgo(board,evaboard,turn,side,depth,boardInfo,alpha,beta)
 	return CarcuEva(board,evaboard,turn,side,boardInfo) if depth.zero?
-    pos=Pos.new(-1,-1)
-	side.times do|i|
-			side.times do|j|
-					cpboard=Marshal.load(Marshal.dump(board))
-					if Put?(Pos.new(j,i),cpboard,turn,side)
-							cpboard[i][j]=turn
-							score=BetaAlgo(cpboard,evaboard,turn*-1,side,depth-1,boardInfo)
-                            if score<beta
-                              beta=score
-                              if beta<=alpha
-                                return alpha
-                              end
-                            end
-					end
-			end
-	end
+        pos=Pos.new(-1,-1)
+        posList=CanPut(board,turn,side)
+        posList=SortNode(board,evaboard,turn,side,boardInfo,posList,1) if depth>=3
+        posList.each do|putPos|
+	  cpboard=Marshal.load(Marshal.dump(board))
+          currentPos=putPos
+          Put?(currentPos,cpboard,turn,side)
+          cpboard[currentPos.y][currentPos.x]=turn
+	  score=BetaAlgo(cpboard,evaboard,turn*-1,side,depth-1,boardInfo)
+          if score<beta
+            beta=score
+            if beta<=alpha
+              return alpha
+            end
+          end
+        end
 	return beta
 end

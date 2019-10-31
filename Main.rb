@@ -6,6 +6,7 @@ def Main()#MainFunction
 	side=10#SideLength
 	puts "Please input your turn" 
     #Send message of "Recruit" to server
+    #p $myturn=Socket("Recruit")
     inputTurn=gets.chomp
     case inputTurn 
     when "black" then
@@ -35,7 +36,7 @@ def Main()#MainFunction
           if $bestPos==nil
             $bestPos=Pos.new(-1,-1)
           end
-          #input=Socket($bestPos.x.to_s+","+$bestPos.y.to_s)
+          #input=Socket("turn:#{$myturn}:#{$bestPos.x},#{$bestPos.y}")
 		else
 			$level=4
             if FullMap?(board,side).zero?
@@ -104,8 +105,7 @@ def Judge(pos,judgeboard,turn,side,dirX,dirY)#Actually confirm whether to put pi
 			judgeboard[nextpos.y][nextpos.x]=turn
 			return true
 		else
-			return false
-		end
+			return false end
 	end
 end
 
@@ -120,7 +120,7 @@ def Print(board)#Print the current board
 				(board.size).times do|j|
 						case board[i][j]
 						when 0 then
-								print " □"
+								print " *"
 						when 1 then
 								print " ○"
 						when -1 then
@@ -151,9 +151,17 @@ def Socket(sendMessage)
       x.name=="en0" and x.addr.ipv4?
     }.first.addr.ip_address
     connect=TCPSocket.open(ipAddress,50000)
-    connect.puts sendMessage
-    receivePos=connect.gets.chomp.split(",").map(&:to_i)
+    connect.print sendMessage
+    #receivePos=connect.gets.chomp.split(",").map(&:to_i)
+    neccesallyInfo=nil
+    receiveMessage=connect.recv(100).chomp.split(":")
+    puts receiveMessage
+    case receiveMessage[0]
+    when "" then
+    else
+        neccesallyInfo=receiveMessage[0].to_i
+    end
     connect.close
-    return receivePos
+    return neccesallyInfo
 end
 Main()
