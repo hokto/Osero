@@ -12,17 +12,17 @@ def CarcuEva(board,evaboard,turn,side,boardInfo)#Carcuation evacuation of curren
     enemyCanPutVal=0#Enemy's prediction value
 	side.times do|i|
 			side.times do|j|
-					if board[i][j]==turn
-							dir_x=[1,1,0,-1,-1,-1,0,1]
-							dir_y=[0,-1,-1,-1,0,1,1,1]
-							value+=evaboard[i][j]
-							nonecnt=0#side's pieces
-							8.times do|k|
-									if not (i+dir_y[k]).between?(0,side-1) or not (j+dir_x[k]).between?(0,side-1)
-										nonecnt+=1
-									end
-							end
-							value+=evaboard[i][j]*(nonecnt-1) if not nonecnt.zero?#Value increase if the more I have side's pieces
+					if board[i][j]==turn 
+                                          dir_x=[1,1,0,-1,-1,-1,0,1]
+					  dir_y=[0,-1,-1,-1,0,1,1,1]
+					  value+=evaboard[i][j]
+					  nonecnt=0#side's pieces
+					  8.times do|k|
+					    if not (i+dir_y[k]).between?(0,side-1) or not (j+dir_x[k]).between?(0,side-1)
+					      nonecnt+=1
+					    end
+				       	  end
+					  value+=evaboard[i][j]*(nonecnt-1) if not nonecnt.zero?#Value increase if the more I have side's pieces
                     elsif board[i][j]==turn*-1
                             enemyValue+=evaboard[i][j]
                     else
