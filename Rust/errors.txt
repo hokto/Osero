@@ -1,0 +1,111 @@
+error[E0425]: cannot find value `board_info` in this scope
+  --> main.rs:98:67
+   |
+98 |         eva_vec.push(carcu_eva(&copy_board,&eva_board,&turn,side,&board_info));
+   |                                                                   ^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `quicksort_node` in this scope
+   --> main.rs:100:12
+    |
+100 |     return quicksort_node(&mut pos_vec,&mut eva_vec,0,pos_vec.len()-1,ab_flag);
+    |            ^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find value `ab_flag` in this scope
+   --> main.rs:100:71
+    |
+100 |     return quicksort_node(&mut pos_vec,&mut eva_vec,0,pos_vec.len()-1,ab_flag);
+    |                                                                       ^^^^^^^ help: a local variable with a similar name exists: `abflag`
+
+error[E0425]: cannot find value `ab_flag` in this scope
+   --> main.rs:163:83
+    |
+163 | ...ide,&board_info,&pos_vec,&ab_flag);
+    |                              ^^^^^^^ not found in this scope
+
+error[E0277]: the trait bound `Pos: std::clone::Clone` is not satisfied
+  --> main.rs:95:48
+   |
+95 |         let copy_board:Vec<Pos>=eva_vec.iter().cloned();
+   |                                                ^^^^^^ the trait `std::clone::Clone` is not implemented for `Pos`
+
+error[E0308]: mismatched types
+  --> main.rs:95:33
+   |
+95 |         let copy_board:Vec<Pos>=eva_vec.iter().cloned();
+   |                                 ^^^^^^^^^^^^^^^^^^^^^^^ expected struct `std::vec::Vec`, found struct `std::iter::Cloned`
+   |
+   = note: expected type `std::vec::Vec<Pos>`
+              found type `std::iter::Cloned<std::slice::Iter<'_, Pos>>`
+
+error[E0308]: mismatched types
+  --> main.rs:96:24
+   |
+96 |         board_put(&pos,&mut copy_board,&turn,side);
+   |                        ^^^^^^^^^^^^^^^ expected struct `std::vec::Vec`, found struct `Pos`
+   |
+   = note: expected type `&mut std::vec::Vec<std::vec::Vec<i8>>`
+              found type `&mut std::vec::Vec<Pos>`
+
+error[E0277]: the type `[Pos]` cannot be indexed by `i8`
+  --> main.rs:97:9
+   |
+97 |         copy_board[pos.y][pos.x]=*turn;
+   |         ^^^^^^^^^^^^^^^^^ slice indices are of type `usize` or ranges of `usize`
+   |
+   = help: the trait `std::slice::SliceIndex<[Pos]>` is not implemented for `i8`
+   = note: required because of the requirements on the impl of `std::ops::Index<i8>` for `std::vec::Vec<Pos>`
+
+error[E0308]: mismatched types
+  --> main.rs:98:32
+   |
+98 |         eva_vec.push(carcu_eva(&copy_board,&eva_board,&turn,side,&board_info));
+   |                                ^^^^^^^^^^^ expected struct `std::vec::Vec`, found struct `Pos`
+   |
+   = note: expected type `&std::vec::Vec<std::vec::Vec<i8>>`
+              found type `&std::vec::Vec<Pos>`
+
+error[E0308]: mismatched types
+  --> main.rs:98:22
+   |
+98 |         eva_vec.push(carcu_eva(&copy_board,&eva_board,&turn,side,&board_info));
+   |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected struct `Pos`, found i32
+   |
+   = note: expected type `Pos`
+              found type `i32`
+
+error[E0061]: this function takes 6 parameters but 7 parameters were supplied
+   --> main.rs:163:17
+    |
+92  | fn sort_node(board:&mut Vec<Vec<i8>>,eva_board: Vec<Vec<i32>>,turn:&i8,side:usize,pos_vec:&mut Vec<Pos>,abflag:&bool) ->Vec<Po...
+    | -------------------------------------------------------------------------------------------------------------------------------- defined here
+...
+163 |         pos_vec=sort_node(&mut *board,&eva_board,&turn,side,&board_info,&pos_vec,&ab_flag);
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected 6 parameters
+
+error[E0308]: mismatched types
+   --> main.rs:162:16
+    |
+162 |       if depth>=3{
+    |  ________________^
+163 | |         pos_vec=sort_node(&mut *board,&eva_board,&turn,side,&board_info,&pos_vec,&ab...
+164 | |     }
+    | |_____^ expected i32, found ()
+    |
+    = note: expected type `i32`
+               found type `()`
+
+error[E0308]: mismatched types
+   --> main.rs:162:5
+    |
+162 | /     if depth>=3{
+163 | |         pos_vec=sort_node(&mut *board,&eva_board,&turn,side,&board_info,&pos_vec,&ab...
+164 | |     }
+    | |_____^ expected i32, found ()
+    |
+    = note: expected type `i32`
+               found type `()`
+
+error: aborting due to 13 previous errors
+
+Some errors have detailed explanations: E0061, E0277, E0308, E0425.
+For more information about an error, try `rustc --explain E0061`.
