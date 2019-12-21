@@ -90,7 +90,7 @@ def AlphaAlgo(board,evaboard,turn,side,depth,boardInfo,alpha,beta)
     currentPos=putPos
     Put?(currentPos,cpboard,turn,side)
     cpboard[currentPos.y][currentPos.x]=turn
-    score=AlphaAlgo(cpboard,evaboard,turn*-1,side,depth-1,boardInfo,alpha,beta)
+    score=BetaAlgo(cpboard,evaboard,turn*-1,side,depth-1,boardInfo,alpha,beta)
     if score>alpha
       alpha=score
       pos=currentPos
@@ -114,7 +114,7 @@ def BetaAlgo(board,evaboard,turn,side,depth,boardInfo,alpha,beta)
     currentPos=putPos
     Put?(currentPos,cpboard,turn,side)
     cpboard[currentPos.y][currentPos.x]=turn
-    score=BetaAlgo(cpboard,evaboard,turn*-1,side,depth-1,boardInfo)
+    score=AlphaAlgo(cpboard,evaboard,turn*-1,side,depth-1,boardInfo,alpha,beta)
     if score<beta
       beta=score
       if beta<=alpha
