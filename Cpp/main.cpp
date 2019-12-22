@@ -9,6 +9,9 @@
 #define SIDE 10
 #define MINF -1000000000
 #define INF 1000000000
+#define WHITE -1
+#define BLACK 1
+#define NONE 0
 
 int Alpha(int board[SIDE][SIDE],int eva_board[SIDE][SIDE],int turn,int depth,int board_info,int alpha,int beta);
 int Beta(int board[SIDE][SIDE],int eva_board[SIDE][SIDE],int turn,int depth,int board_info,int alpha,int beta);
@@ -42,13 +45,13 @@ void print_board(int board[SIDE][SIDE])
 		{
 			switch(board[i][j])
 			{
-				case 1:
+				case WHITE:
 					printf(" ●");
 					break;
-				case -1:
+				case BLACK:
 					printf(" ○");
 					break;
-				case 0:
+				case NONE:
 					printf(" □");
 					break;
 			}
@@ -114,6 +117,26 @@ bool isFullBoard(int board[SIDE][SIDE])
 		}
 	}
 	return true;
+}
+void UpdatePieces(int board[SIDE][SIDE],int *white,int *black)
+{
+	*white=0;
+	*black=0;
+	for(int i=0;i<SIDE;i++)
+	{
+		for(int j=0;j<SIDE;j++)
+		{
+			switch(board[i][j])
+			{
+				case WHITE:
+					*white+=1;
+					break;
+				case BLACK:
+					*black+=1;
+					break;
+			}	
+		}
+	}
 }
 Pos best_pos(-1,-1);
 int level=0;
@@ -352,24 +375,30 @@ int main()
 	int board[SIDE][SIDE]={0};
 	std::string input_turn;
 	int my_turn=0;
-	int turn=-1;
+	int turn=BLACK;
 	int turn_cnt=0;
 	int path_cnt=0;
 	int board_info=0;
+	int white=0;
+	int black=0;
 	puts("Input turn.white or black");
 	std::cin>>input_turn;
 	if(input_turn=="white")
 	{
-		my_turn=1;
+		my_turn=WHITE;
 	}
 	else if(input_turn=="black")
 	{
-		my_turn=-1;
+		my_turn=BLACK;
 	}
 	board[SIDE/2-1][SIDE/2-1]=1;
 	board[SIDE/2][SIDE/2]=1;
 	board[SIDE/2-1][SIDE/2]=-1;
 	board[SIDE/2][SIDE/2-1]=-1;
+	level=5;
+	print_board(board);
+	UpdatePieces(board,&white,&black);
+	printf("White:%d	Black:%d\n",white,black);
 	do
 	{
 		if(path_cnt>=2)
@@ -385,19 +414,17 @@ int main()
 			board_info=2;
 		}
 		bool path_flag=false;
-		print_board(board);
 		Pos input_pos(-1,-1);	
-		if(my_turn==turn)
+		//if(my_turn==turn)
 		{
-			level=5;
 			AlphaBeta(board,turn,level,0);
 			input_pos=best_pos;
 		}
-		else
+		/*else
 		{	
 			puts("Input Coordinates.(path:-1 -1)");
 			std::cin>>input_pos.x>>input_pos.y;
-		}
+		}*/
 		printf("x:%d y:%d\n",input_pos.x,input_pos.y);	
 		if(input_pos.x==-1&&input_pos.y==-1)
 		{
@@ -423,6 +450,13 @@ int main()
 		}
 		turn*=-1;
 		turn_cnt++;
+		if(SIDE*SIDE-4-turn_cnt<level)
+		{
+			level=SIDE*SIDE-4-turn_cnt;
+		}
+		print_board(board);
+		UpdatePieces(board,&white,&black);
+		printf("White:%d	Black:%d\n",white,black);
 	}while(!isFullBoard(board));
 	return 0;
 }
