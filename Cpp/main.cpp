@@ -7,12 +7,8 @@
 #include<istream>
 #include<fstream>
 #include<cmath>
-#define SIDE 10
-#define MINF -1000000000
-#define INF 1000000000
-#define WHITE -1
-#define BLACK 1
-#define NONE 0
+#include"ga.hpp"
+
 
 int Alpha(int board[SIDE][SIDE],int eva_board[SIDE][SIDE],int turn,int depth,int board_info,int alpha,int beta);
 int Beta(int board[SIDE][SIDE],int eva_board[SIDE][SIDE],int turn,int depth,int board_info,int alpha,int beta);

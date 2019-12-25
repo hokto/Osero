@@ -4,102 +4,78 @@
 #include<fstream>
 #include<vector>
 #include<algorithm>
-#define SIDE 10
-#define MAX_VAL 100
-#define MIN_VAL -100
-#define CROSSOVER_RATE 90
-#define MUTATION_RATE 1
-#define MULTI_POINT	10
-//範囲内での乱数を返す関数
-int Rand(int min,int max);
-class GA
+#include"ga.hpp"
+
+//遺伝子の保存
+void GA::gene_save()
 {
-	private:
-   	public:
-		// 0:序盤有利盤面　1:序盤不利盤面　2:中盤有利盤面　3:中盤不利盤面　4:終盤有利盤面　5:終盤不利盤面 int genes[6][SIDE][SIDE];
-		int gene[6][SIDE][SIDE];
-		static int genes_total;
-		//選択時に評価するスコア
-		int score=0;
-		//選択時に計算する最終的なこの遺伝子の個体数
-		int gene_population=0;
-		int num;
-		GA()
+	for(int i=0;i<6;i++)
+	{
+		std::string fileName="Genes/gene"+std::to_string(num)+std::to_string(i)+".txt";
+		std::ofstream write_file;
+		write_file.open(fileName,std::ios::out);
+		for(int j=0;j<SIDE;j++)
 		{
-			num=genes_total;
-			genes_total++;
-		}
-		//遺伝子の保存
-		void gene_save()
-		{
-			for(int i=0;i<6;i++)
+			for(int k=0;k<SIDE;k++)
 			{
-				std::string fileName="Genes/gene"+std::to_string(num)+std::to_string(i)+".txt";
-				std::ofstream write_file;
-				write_file.open(fileName,std::ios::out);
-				for(int j=0;j<SIDE;j++)
-				{
-					for(int k=0;k<SIDE;k++)
-					{
-						write_file<<std::to_string(gene[i][j][k])+",";
-					}
-					write_file<<std::endl;
-				}	
+				write_file<<std::to_string(gene[i][j][k])+",";
+			}
+			write_file<<std::endl;
+		}	
+	}
+}
+//遺伝子の初期化
+void GA::Init_gene()
+{
+	for(int i=0;i<6;i++)
+	{
+		for(int j=0;j<SIDE/2;j++)
+		{ 
+			for(int k=0;k<SIDE/2;k++)
+			{
+				int val=Rand(MIN_VAL,MAX_VAL);
+				gene[i][j][k]=val;
+				gene[i][SIDE-j-1][SIDE-k-1]=val;
+				gene[i][SIDE-j-1][k]=val;
+				gene[i][j][SIDE-1-k]=val;	
 			}
 		}
-		//遺伝子の初期化
-		void Init_gene()
+	}
+	gene_save();
+}
+//評価の対象となるスコアの計算
+void GA::Cal_score(int board[SIDE][SIDE],int my_turn)
+{
+	int none_cnt=0;
+	for(int i=0;i<SIDE;i++)
+	{
+		for(int j=0;j<SIDE;j++)
 		{
-			for(int i=0;i<6;i++)
+			if(my_turn==board[i][j])
 			{
-				for(int j=0;j<SIDE/2;j++)
-				{ 
-					for(int k=0;k<SIDE/2;k++)
-					{
-						int val=Rand(MIN_VAL,MAX_VAL);
-						gene[i][j][k]=val;
-						gene[i][SIDE-j-1][SIDE-k-1]=val;
-						gene[i][SIDE-j-1][k]=val;
-						gene[i][j][SIDE-1-k]=val;	
-					}
-				}
+				score++;
 			}
-			gene_save();
-		}
-		//評価の対象となるスコアの計算
-		void Cal_score(int board[SIDE][SIDE],int my_turn)
-		{
-			int none_cnt=0;
-			for(int i=0;i<SIDE;i++)
+			else if(my_turn==board[i][j]*-1)
 			{
-				for(int j=0;j<SIDE;j++)
-				{
-					if(my_turn==board[i][j])
-					{
-						score++;
-					}
-					else if(my_turn==board[i][j]*-1)
-					{
-						score--;
-					}
-					else
-					{
-						none_cnt++;
-					}
-				}
-			}
-			if(score<0)
-			{
-				//負けていたらスコア0
-				score=0;
+				score--;
 			}
 			else
 			{
-				//勝っていたときに、空きマス分を評価する
-				score+=none_cnt;
+				none_cnt++;
 			}
 		}
-};
+	}
+	if(score<0)
+	{
+		//負けていたらスコア0
+		score=0;
+	}
+	else
+	{
+		//勝っていたときに、空きマス分を評価する
+		score+=none_cnt;
+	}
+}
 int GA::genes_total=0;
 int Rand(int min,int max)
 {
@@ -107,7 +83,8 @@ int Rand(int min,int max)
 	std::mt19937 mt(rd());
 	std::uniform_int_distribution<> rand(min,max);
 	return rand(mt);
-} //遺伝子の個体数の多い順にソート 
+}
+//遺伝子の個体数の多い順にソート 
 std::vector<GA> Sort_genes(std::vector<GA> genes,int left,int right)
 {
 	int i=left+1;
@@ -308,10 +285,4 @@ std::vector<GA> Blx_Alpha(std::vector<GA> genes)
 }
 int main()
 {
-	for(int i=0;i<5;i++)
-	{
-		GA gene;
-		gene.Init_gene();
-	}
-	return 0;
-}
+return 0;}
