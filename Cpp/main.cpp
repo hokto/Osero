@@ -2,6 +2,7 @@
 #include<algorithm>
 #include<vector>
 #include<string>
+#include<cstring>
 #include<sstream>
 #include<istream>
 #include<fstream>
@@ -370,7 +371,7 @@ int Alpha(int board[SIDE][SIDE],int eva_board[SIDE][SIDE],int turn,int depth,int
 	}
 	return alpha;
 }
-int main()
+void Osero()
 {
 	int board[SIDE][SIDE]={0};
 	std::string input_turn;
@@ -458,5 +459,9 @@ int main()
 		UpdatePieces(board,&white,&black);
 		printf("White:%d	Black:%d\n",white,black);
 	}while(!isFullBoard(board));
+}
+int main()
+{
+	Osero();
 	return 0;
 }
