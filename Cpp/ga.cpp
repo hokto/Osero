@@ -1,10 +1,11 @@
+#include"ga.hpp"
 #include<iostream>
 #include<random>
 #include<string>
 #include<fstream>
 #include<vector>
 #include<algorithm>
-#include"ga.hpp"
+
 
 //遺伝子の保存
 void GA::gene_save()
@@ -12,21 +13,20 @@ void GA::gene_save()
 	for(int i=0;i<6;i++)
 	{
 		std::string fileName="Genes/gene"+std::to_string(num)+std::to_string(i)+".txt";
-		std::ofstream write_file;
-		write_file.open(fileName,std::ios::out);
+		std::ofstream write_file; write_file.open(fileName,std::ios::out);
 		for(int j=0;j<SIDE;j++)
 		{
 			for(int k=0;k<SIDE;k++)
 			{
 				write_file<<std::to_string(gene[i][j][k])+",";
-			}
-			write_file<<std::endl;
-		}	
+			} write_file<<std::endl; }	
 	}
 }
 //遺伝子の初期化
 void GA::Init_gene()
 {
+	num=genes_total;
+	genes_total++;
 	for(int i=0;i<6;i++)
 	{
 		for(int j=0;j<SIDE/2;j++)
@@ -76,7 +76,6 @@ void GA::Cal_score(int board[SIDE][SIDE],int my_turn)
 		score+=none_cnt;
 	}
 }
-int GA::genes_total=0;
 int Rand(int min,int max)
 {
 	std::random_device rd;
@@ -85,17 +84,17 @@ int Rand(int min,int max)
 	return rand(mt);
 }
 //遺伝子の個体数の多い順にソート 
-std::vector<GA> Sort_genes(std::vector<GA> genes,int left,int right)
+void Sort_genes(std::vector<GA>& genes,int left,int right)
 {
 	int i=left+1;
 	int k=right;
 	while(i<k)
 	{
-		while(genes[i].gene_population>=genes[left].gene_population&&i<right)
+		while(genes[i].gene_population<genes[left].gene_population&&i<right)
 		{
 			i++;
 		}
-		while(genes[k].gene_population<genes[left].gene_population&&k>left)
+		while(genes[k].gene_population>=genes[left].gene_population&&k>left)
 		{
 			k--;
 		}
@@ -104,7 +103,7 @@ std::vector<GA> Sort_genes(std::vector<GA> genes,int left,int right)
 			std::swap(genes[i],genes[k]);
 		}
 	}
-	if(genes[left].gene_population<=genes[k].gene_population)
+	if(genes[left].gene_population>genes[k].gene_population)
 	{
 		std::swap(genes[left],genes[k]);
 	}
@@ -116,15 +115,14 @@ std::vector<GA> Sort_genes(std::vector<GA> genes,int left,int right)
 	{
 		Sort_genes(genes,k+1,right);
 	}
-	return genes;
 }
 //期待値選択方式により、優秀な遺伝子の選別(残りは、ルーレット方式により選択)
 std::vector<GA> Select_gene(std::vector<GA> genes)
 {
 	int score_total=0;
-	for(GA gene : genes)
+	for(int i=0;i<genes.size();i++)
 	{
-		score_total+=gene.score;	
+		score_total+=genes[i].score;	
 	}
 	int population_total=0;
 	int progeny_total=0;
@@ -133,59 +131,83 @@ std::vector<GA> Select_gene(std::vector<GA> genes)
 		int val=Rand(0,100);
 		if(val<=CROSSOVER_RATE) progeny_total++;
 	}
-	for(GA gene : genes)
+	printf("Progeny:%d\n",progeny_total);
+	for(int i=0;i<genes.size();i++)
 	{
-		gene.gene_population=(GA::genes_total-progeny_total)*(gene.score/score_total);
-		population_total+=gene.gene_population;
+		genes[i].gene_population=(int)((double)progeny_total*((double)genes[i].score/(double)score_total));
+		population_total+=genes[i].gene_population;
 	}
-	if(GA::genes_total-progeny_total>population_total)
+	printf("%d\n",population_total);
+	if(progeny_total>population_total)
 	{
 		//残りをルーレット方式により選択する
-		int gene_not_enough=GA::genes_total-progeny_total-population_total;
+		int gene_not_enough=progeny_total-population_total;
 		for(int i=0;i<gene_not_enough;i++)
 		{
 			int val=Rand(0,population_total-1);
-			for(GA gene : genes)
+			for(int j=0;j<genes.size();j++)
 			{
-				val-=gene.gene_population;
+				val-=genes[j].gene_population;
 				if(val<0)
 				{
-					gene.gene_population++;
+					genes[j].gene_population++;
+					break;
 				}
 			}
 			population_total++;
 		}
 	}
+	printf("%d\n",population_total);
 	return genes;
 }
 
 //交叉する遺伝子の組み合わせを決定する
-void Crossover_genes(std::vector<GA> genes,int *num1,int *num2)
+std::vector<GA> Crossover_genes(std::vector<GA> genes,int &num1,int &num2)
 {
-	*num1=-1,*num2=-1;
+	num1=-1,num2=-1;
 	for(int i=0;i<genes.size();i++)
 	{
-		if(genes[i].gene_population!=0)
+		if(genes[i].gene_population>0)
 		{
-			if(*num1==-1)
+			if(num1==-1)
 			{
-				*num1=i;
+				num1=i;
+				genes[i].gene_population--;
 			}
 			else
 			{
-				*num2=i;
+				num2=i;
+				genes[i].gene_population--;
 				break;
 			}
 		}	
 	}
+	return genes;
 }
 //多点交叉法による遺伝子の交叉
 std::vector<GA> MultiPoint(std::vector<GA> genes)
 {
+	std::vector<GA> next_genes(GA::genes_total);
+	int progeny_total=0;
+	for(int i=0;i<genes.size();i++)
+	{
+		progeny_total+=genes[i].gene_population;
+		if(genes[i].gene_population==0)break;
+	}
+	int idx=0;
+	int next_idx=0;
+	for(next_idx=0;next_idx<GA::genes_total-progeny_total;next_idx++)
+	{
+		if(genes[idx].gene_population==0)idx=0;
+		next_genes[next_idx]=genes[idx];
+		idx++;
+	}
 	while(true)
 	{
 		int parent_num1,parent_num2;
-		Crossover_genes(genes,&parent_num1,&parent_num2);	
+		genes=Crossover_genes(genes,parent_num1,parent_num2);	
+		printf("1:%d\n",parent_num1);
+		printf("2:%d\n",parent_num2);
 		if(parent_num1==-1&&parent_num2==-1)
 		{
 			break;
@@ -194,6 +216,10 @@ std::vector<GA> MultiPoint(std::vector<GA> genes)
 		{
 			parent_num2=parent_num1;
 		}
+		next_genes[next_idx]=genes[parent_num1];
+		next_genes[next_idx+1]=genes[parent_num2];
+		parent_num1=next_idx;
+		parent_num2=next_idx+1;
 		//分割点
 		int split_point[MULTI_POINT-1];
 		int i=0;
@@ -231,15 +257,16 @@ std::vector<GA> MultiPoint(std::vector<GA> genes)
 					//遺伝子の一部を交換し、新しい遺伝子を作る
 					if(flag_crossover)
 					{
-						std::swap(genes[parent_num1].gene[i][j][k],genes[parent_num2].gene[i][j][k]);
-						std::swap(genes[parent_num1].gene[i][SIDE-j-1][SIDE-k-1],genes[parent_num2].gene[i][SIDE-j-1][SIDE-k-1]);
-						std::swap(genes[parent_num1].gene[i][SIDE-j-1][k],genes[parent_num2].gene[i][SIDE-j-1][k]);
-						std::swap(genes[parent_num1].gene[i][j][SIDE-k-1],genes[parent_num2].gene[i][j][SIDE-k-1]);	
+						std::swap(next_genes[parent_num1].gene[i][j][k],next_genes[parent_num2].gene[i][j][k]);
+						std::swap(next_genes[parent_num1].gene[i][SIDE-j-1][SIDE-k-1],next_genes[parent_num2].gene[i][SIDE-j-1][SIDE-k-1]);
+						std::swap(next_genes[parent_num1].gene[i][SIDE-j-1][k],next_genes[parent_num2].gene[i][SIDE-j-1][k]);
+						std::swap(next_genes[parent_num1].gene[i][j][SIDE-k-1],next_genes[parent_num2].gene[i][j][SIDE-k-1]);	
 					}
 				}
 			}
 		}
 	}
+	printf("Debug\n");
 	return genes;
 }
 
@@ -247,10 +274,30 @@ std::vector<GA> MultiPoint(std::vector<GA> genes)
 std::vector<GA> Blx_Alpha(std::vector<GA> genes)
 {
 	std::vector<GA> next_genes(GA::genes_total);
+	int progeny_total=0;
+	for(int i=0;i<genes.size();i++)
+	{
+		progeny_total+=genes[i].gene_population;
+		if(genes[i].gene_population==0)break;
+	}
+	int idx=0;
+	int next_idx;
+	for(next_idx=0;next_idx<GA::genes_total-progeny_total;next_idx++)
+	{
+		if(genes[idx].gene_population==0)idx=0;
+		next_genes[next_idx]=genes[idx];
+		idx++;
+	}
+	int cnt=0;
 	while(true)
 	{
 		int parent_num1,parent_num2;
-		Crossover_genes(genes,&parent_num1,&parent_num2);	
+		genes=Crossover_genes(genes,parent_num1,parent_num2);	
+		cnt+=2;
+		printf("1:%d\n",parent_num1);
+		printf("2:%d\n",parent_num2);
+		printf("cnt:%d\n",cnt);
+		printf("Progeny:%d\n",progeny_total);
 		if(parent_num1==-1&&parent_num2==-1)
 		{
 			break;
@@ -259,7 +306,6 @@ std::vector<GA> Blx_Alpha(std::vector<GA> genes)
 		{
 			parent_num2=parent_num1;
 		}
-		int idx=0;
 		for(int i=0;i<6;i++)
 		{
 			for(int j=0;j<SIDE/2;j++)
@@ -273,16 +319,48 @@ std::vector<GA> Blx_Alpha(std::vector<GA> genes)
 					int min_c=min-alpha*d;
 					int max_c=max+alpha*d;
 					int val=Rand(min_c,max_c);
-					next_genes[idx].gene[i][j][k]=val;
-					next_genes[idx].gene[i][SIDE-j-1][SIDE-k-1]=val;
-					next_genes[idx].gene[i][SIDE-j-1][k]=val;
-					next_genes[idx].gene[i][j][SIDE-k-1]=val;
+					next_genes[next_idx].gene[i][j][k]=val;
+					next_genes[next_idx].gene[i][SIDE-j-1][SIDE-k-1]=val;
+					next_genes[next_idx].gene[i][SIDE-j-1][k]=val;
+					next_genes[next_idx].gene[i][j][SIDE-k-1]=val;
+					val=Rand(min_c,max_c);
+					if(next_idx+1<GA::genes_total)
+					{
+						next_genes[next_idx+1].gene[i][j][k]=val;
+						next_genes[next_idx+1].gene[i][SIDE-j-1][SIDE-k-1]=val;
+						next_genes[next_idx+1].gene[i][SIDE-j-1][k]=val;
+						next_genes[next_idx+1].gene[i][j][SIDE-k-1]=val;
+					}
 				}
 			}	
 		}
+		next_idx+=2;
 	}
 	return next_genes;
 }
-int main()
+
+std::vector<GA> Mutation(std::vector<GA> genes)
 {
-return 0;}
+	for(int i=0;i<genes.size();i++)
+	{
+		for(int j=0;j<6;j++)
+		{
+			for(int k=0;k<SIDE/2;k++)
+			{
+				for(int l=0;l<SIDE/2;l++)
+				{
+					if(Rand(0,100)<=MUTATION_RATE)
+					{
+						puts("Mutation!");
+						int val=Rand(MIN_VAL,MAX_VAL);
+						genes[i].gene[j][k][l]=val;
+						genes[i].gene[j][SIDE-k-1][SIDE-l-1]=val;
+						genes[i].gene[j][SIDE-k-1][l]=val;
+						genes[i].gene[j][k][SIDE-l-1]=val;
+					}
+				}
+			}
+		}
+	}
+	return genes;
+}

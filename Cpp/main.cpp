@@ -1,3 +1,4 @@
+#include"ga.hpp"
 #include<iostream>
 #include<algorithm>
 #include<vector>
@@ -7,7 +8,6 @@
 #include<istream>
 #include<fstream>
 #include<cmath>
-#include"ga.hpp"
 
 
 int Alpha(int board[SIDE][SIDE],int eva_board[SIDE][SIDE],int turn,int depth,int board_info,int alpha,int beta);
@@ -15,6 +15,10 @@ int Beta(int board[SIDE][SIDE],int eva_board[SIDE][SIDE],int turn,int depth,int 
 const int dirX[8]={1,1,0,-1,-1,-1,0,1};
 const int dirY[8]={0,-1,-1,-1,0,1,1,1};
 
+int GA::genes_total=0;
+std::vector<GA> genes(N_GENES);
+int gene1;
+int gene2;
 /*Osero*/
 class Pos
 {
@@ -115,10 +119,10 @@ bool isFullBoard(int board[SIDE][SIDE])
 	}
 	return true;
 }
-void UpdatePieces(int board[SIDE][SIDE],int *white,int *black)
+void UpdatePieces(int board[SIDE][SIDE],int &white,int &black)
 {
-	*white=0;
-	*black=0;
+	white=0;
+	black=0;
 	for(int i=0;i<SIDE;i++)
 	{
 		for(int j=0;j<SIDE;j++)
@@ -126,10 +130,10 @@ void UpdatePieces(int board[SIDE][SIDE],int *white,int *black)
 			switch(board[i][j])
 			{
 				case WHITE:
-					*white+=1;
+					white+=1;
 					break;
 				case BLACK:
-					*black+=1;
+					black+=1;
 					break;
 			}	
 		}
@@ -263,30 +267,50 @@ std::vector<Pos> SortNode(int board[SIDE][SIDE],int eva_board[SIDE][SIDE],int tu
 	}
 	return QuickSort(pos_vec,eva_vec,0,pos_vec.size()-1,ab_flag);
 }
-void AlphaBeta(int board[SIDE][SIDE],int turn,int depth,int board_info)
+void AlphaBeta(int board[SIDE][SIDE],int turn,int depth,int board_info,bool ga_flag)
 {
 	best_pos.x=best_pos.y=-1;
 	int eva_board[SIDE][SIDE];
-	std::ifstream ifs("../EvaBoard.txt");	
-	if(ifs.fail())
-	{
-		printf("Failed to open file.\n");
-		return;
-	}
-	std::string line;
-	int i=0;
-	while(std::getline(ifs,line))
-	{
-		std::stringstream ss;
-		ss<<line;
-		std::string line_sp;
-		int j=0;
-		while(std::getline(ss,line_sp,','))
+	if(!ga_flag)
+	{	
+		std::ifstream ifs("../EvaBoard.txt");	
+		if(ifs.fail())
 		{
-			eva_board[i][j]=atoi(line_sp.c_str());
-			j++;	
+			printf("Failed to open file.\n");
+			return;
 		}
-		i++;
+		std::string line;
+		int i=0;
+		while(std::getline(ifs,line))
+		{
+			std::stringstream ss;
+			ss<<line;
+			std::string line_sp;
+			int j=0;
+			while(std::getline(ss,line_sp,','))
+			{
+				eva_board[i][j]=atoi(line_sp.c_str());
+				j++;	
+			}
+			i++;
+		}
+	}
+	else
+	{
+		for(int i=0;i<SIDE;i++)
+		{
+			for(int j=0;j<SIDE;j++)
+			{
+				if(turn==BLACK)
+				{
+					eva_board[i][j]=genes[gene1].gene[0][i][j];
+				}
+				else
+				{
+					eva_board[i][j]=genes[gene2].gene[0][i][j];
+				}
+			}
+		}
 	}
 	Alpha(board,eva_board,turn,depth,board_info,MINF,INF);
 }
@@ -367,9 +391,8 @@ int Alpha(int board[SIDE][SIDE],int eva_board[SIDE][SIDE],int turn,int depth,int
 	}
 	return alpha;
 }
-void Osero()
+void Osero(int board[SIDE][SIDE],bool ga_flag)
 {
-	int board[SIDE][SIDE]={0};
 	std::string input_turn;
 	int my_turn=0;
 	int turn=BLACK;
@@ -378,23 +401,26 @@ void Osero()
 	int board_info=0;
 	int white=0;
 	int black=0;
-	puts("Input turn.white or black");
-	std::cin>>input_turn;
-	if(input_turn=="white")
+	if(!ga_flag)
 	{
-		my_turn=WHITE;
-	}
-	else if(input_turn=="black")
-	{
-		my_turn=BLACK;
+		puts("Input turn.white or black");
+		std::cin>>input_turn;
+		if(input_turn=="white")
+		{
+			my_turn=WHITE;
+		}
+		else if(input_turn=="black")
+		{
+			my_turn=BLACK;
+		}
 	}
 	board[SIDE/2-1][SIDE/2-1]=1;
 	board[SIDE/2][SIDE/2]=1;
 	board[SIDE/2-1][SIDE/2]=-1;
 	board[SIDE/2][SIDE/2-1]=-1;
-	level=5;
+	level=3;
 	print_board(board);
-	UpdatePieces(board,&white,&black);
+	UpdatePieces(board,white,black);
 	printf("White:%d	Black:%d\n",white,black);
 	do
 	{
@@ -412,16 +438,16 @@ void Osero()
 		}
 		bool path_flag=false;
 		Pos input_pos(-1,-1);	
-		//if(my_turn==turn)
+		if(my_turn==turn||ga_flag)
 		{
-			AlphaBeta(board,turn,level,0);
+			AlphaBeta(board,turn,level,0,ga_flag);
 			input_pos=best_pos;
 		}
-		/*else
+		else if(!ga_flag)
 		{	
 			puts("Input Coordinates.(path:-1 -1)");
 			std::cin>>input_pos.x>>input_pos.y;
-		}*/
+		}
 		printf("x:%d y:%d\n",input_pos.x,input_pos.y);	
 		if(input_pos.x==-1&&input_pos.y==-1)
 		{
@@ -452,12 +478,100 @@ void Osero()
 			level=SIDE*SIDE-4-turn_cnt;
 		}
 		print_board(board);
-		UpdatePieces(board,&white,&black);
+		UpdatePieces(board,white,black);
 		printf("White:%d	Black:%d\n",white,black);
 	}while(!isFullBoard(board));
 }
 int main()
 {
-	Osero();
+	bool ga_flag=false;
+	char input;
+	//遺伝的アルゴリズムを用いた遺伝子の作成を行うかどうか
+	puts("GA? (y/n)");
+	std::cin>>input;
+	if(input=='y')
+	{
+		ga_flag=true;
+		for(int i=0;i<N_GENES;i++)
+		{
+			genes[i].Init_gene();
+		}
+		for(int i=0;i<GENERATION;i++)
+		{
+			int excellence_genes[N_GENES]={0};
+			int excellence_total=N_GENES;
+			int current_idx=0;
+			int candidate_genes[5];
+			int cnt=0;//Debug用
+			while(excellence_total>1)
+			{
+				int idx=0;
+				while(idx<5&&current_idx+idx<N_GENES)
+				{
+					if(excellence_genes[current_idx+idx]==0)
+					{
+						candidate_genes[idx]=current_idx+idx;
+					}
+					else
+					{
+						current_idx++;
+						continue;
+					}
+					idx++;
+				}
+				//遺伝子数5つによるトーナメント制
+				for(int j=0;j<idx;j++)
+				{
+					gene1=candidate_genes[j];
+					for(int k=0;k<idx;k++)
+					{
+						if(j==k)continue;
+						gene2=candidate_genes[k];				
+						int board[SIDE][SIDE]={0};
+						Osero(board,ga_flag);
+						genes[gene1].Cal_score(board,BLACK);
+						genes[gene2].Cal_score(board,WHITE);
+					}
+				}
+				int max_idx=candidate_genes[0];
+				for(int j=1;j<idx;j++)
+				{
+					if(candidate_genes[max_idx]<candidate_genes[j])
+					{
+						excellence_genes[max_idx]=1;
+						max_idx=j;
+					}
+					else
+					{
+						excellence_genes[j]=1;
+					}
+					excellence_total--;
+				}
+				current_idx+=idx;
+				if(current_idx>=N_GENES)current_idx=0;
+				cnt++;
+			}
+			puts("SelectGene");
+			genes=Select_gene(genes);
+			puts("SortGene");
+			Sort_genes(genes,0,N_GENES-1);
+			std::reverse(genes.begin(),genes.end());
+			//puts("MultiPoint");
+			//genes=MultiPoint(genes);
+			puts("BlxAlpha");
+			genes=Blx_Alpha(genes);
+			puts("Mutation");
+			genes=Mutation(genes);
+			for(int i=0;i<genes.size();i++)
+			{
+				genes[i].gene_save();
+			}
+		}
+	}
+	else
+	{
+		int board[SIDE][SIDE]={0};
+		Osero(board,ga_flag);
+	}
 	return 0;
 }
