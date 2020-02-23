@@ -6,8 +6,8 @@
 #define CROSSOVER_RATE 	90
 #define MUTATION_RATE 	1
 #define MULTI_POINT	10
-#define N_GENES	100
-#define GENERATION	1
+#define N_GENES	10
+#define GENERATION	5
 #define MINF -1000000000
 #define INF 1000000000
 #define WHITE -1
@@ -23,7 +23,7 @@ class GA
 {
 	private:
    	public:
-		// 0:序盤有利盤面　1:序盤不利盤面　2:中盤有利盤面　3:中盤不利盤面　4:終盤有利盤面　5:終盤不利盤面 int genes[6][SIDE][SIDE];
+		// 0:序盤有利盤面　1:序盤不利盤面　2:中盤有利盤面　3:中盤不利盤面　4:終盤有利盤面　5:終盤不利盤面
 		int gene[6][SIDE][SIDE];
 		static int genes_total;
 		//選択時に評価するスコア

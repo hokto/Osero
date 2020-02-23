@@ -2,6 +2,7 @@
 #include<iostream>
 #include<random>
 #include<string>
+#include<cstring>
 #include<fstream>
 #include<vector>
 #include<algorithm>
@@ -131,13 +132,11 @@ std::vector<GA> Select_gene(std::vector<GA> genes)
 		int val=Rand(0,100);
 		if(val<=CROSSOVER_RATE) progeny_total++;
 	}
-	printf("Progeny:%d\n",progeny_total);
 	for(int i=0;i<genes.size();i++)
 	{
 		genes[i].gene_population=(int)((double)progeny_total*((double)genes[i].score/(double)score_total));
 		population_total+=genes[i].gene_population;
 	}
-	printf("%d\n",population_total);
 	if(progeny_total>population_total)
 	{
 		//残りをルーレット方式により選択する
@@ -157,7 +156,6 @@ std::vector<GA> Select_gene(std::vector<GA> genes)
 			population_total++;
 		}
 	}
-	printf("%d\n",population_total);
 	return genes;
 }
 
@@ -206,8 +204,6 @@ std::vector<GA> MultiPoint(std::vector<GA> genes)
 	{
 		int parent_num1,parent_num2;
 		genes=Crossover_genes(genes,parent_num1,parent_num2);	
-		printf("1:%d\n",parent_num1);
-		printf("2:%d\n",parent_num2);
 		if(parent_num1==-1&&parent_num2==-1)
 		{
 			break;
@@ -266,7 +262,6 @@ std::vector<GA> MultiPoint(std::vector<GA> genes)
 			}
 		}
 	}
-	printf("Debug\n");
 	return genes;
 }
 
@@ -293,11 +288,6 @@ std::vector<GA> Blx_Alpha(std::vector<GA> genes)
 	{
 		int parent_num1,parent_num2;
 		genes=Crossover_genes(genes,parent_num1,parent_num2);	
-		cnt+=2;
-		printf("1:%d\n",parent_num1);
-		printf("2:%d\n",parent_num2);
-		printf("cnt:%d\n",cnt);
-		printf("Progeny:%d\n",progeny_total);
 		if(parent_num1==-1&&parent_num2==-1)
 		{
 			break;

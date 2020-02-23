@@ -8,7 +8,7 @@
 #include<istream>
 #include<fstream>
 #include<cmath>
-
+#include<thread>
 
 int Alpha(int board[SIDE][SIDE],int eva_board[SIDE][SIDE],int turn,int depth,int board_info,int alpha,int beta);
 int Beta(int board[SIDE][SIDE],int eva_board[SIDE][SIDE],int turn,int depth,int board_info,int alpha,int beta);
@@ -20,6 +20,9 @@ std::vector<GA> genes(N_GENES);
 int gene1;
 int gene2;
 /*Osero*/
+
+
+//盤面上の座標格納に使用
 class Pos
 {
 	public:
@@ -31,6 +34,9 @@ class Pos
 		y=y0;
 	}
 };
+
+
+//現在の盤面を見やすいように表示
 void print_board(int board[SIDE][SIDE])
 {
 	printf("  ");
@@ -61,6 +67,7 @@ void print_board(int board[SIDE][SIDE])
 	}
 }
 
+//複数の条件比較を避けるため実装
 bool isBetween(Pos pos)
 {
 	if(0<=pos.x&&pos.x<SIDE&&0<=pos.y&&pos.y<SIDE)
@@ -69,6 +76,8 @@ bool isBetween(Pos pos)
 	}
 	return false;
 }
+
+//駒をひっくり返せるなら返して、trueを返す
 bool canReturn(int board[SIDE][SIDE],int turn,Pos currentPos,int dx,int dy)
 {
 	if(board[currentPos.y][currentPos.x]==0||!isBetween(currentPos))
@@ -90,20 +99,26 @@ bool canReturn(int board[SIDE][SIDE],int turn,Pos currentPos,int dx,int dy)
 		return false;
 	}
 }
+
+//指定された場所においてみて、canReturn()がtrueならばtrueを返す
 bool canPut(int board[SIDE][SIDE],int turn,Pos currentPos)
 {
-	int judge=false;
+	int put_judge=false;
 	for(int i=0;i<8;i++)
 	{
 		Pos nextPos(currentPos.x+dirX[i],currentPos.y+dirY[i]);
 		if(isBetween(nextPos)&&board[currentPos.y][currentPos.x]==0&&board[nextPos.y][nextPos.x]==turn*-1)
 		{
-			bool flag=canReturn(board,turn,nextPos,dirX[i],dirY[i]);
-			if(!judge) judge=flag;
+			bool reverse_judge=canReturn(board,turn,nextPos,dirX[i],dirY[i]);
+
+			//put_judgeがtrueだった場合にfalseに更新されないようにする
+			if(!put_judge) put_judge=reverse_judge; 
 		}
 	}
-	return judge;
+	return put_judge;
 }
+
+
 bool isFullBoard(int board[SIDE][SIDE])
 {
 	for(int i=0;i<SIDE;i++)
@@ -111,6 +126,7 @@ bool isFullBoard(int board[SIDE][SIDE])
 		for(int j=0;j<SIDE;j++)
 		{
 			int cp_board[SIDE][SIDE];
+			//自分の駒と相手の駒で盤面がすべてうまっているかどうか
 			memcpy(cp_board,board,sizeof(int)*SIDE*SIDE);
 			if(canPut(cp_board,1,Pos(j,i))) return false;
 			memcpy(cp_board,board,sizeof(int)*SIDE*SIDE);
@@ -119,7 +135,9 @@ bool isFullBoard(int board[SIDE][SIDE])
 	}
 	return true;
 }
-void UpdatePieces(int board[SIDE][SIDE],int &white,int &black)
+
+
+void countPieces(int board[SIDE][SIDE],int &white,int &black)
 {
 	white=0;
 	black=0;
@@ -142,6 +160,9 @@ void UpdatePieces(int board[SIDE][SIDE],int &white,int &black)
 Pos best_pos(-1,-1);
 int level=0;
 /*Algorithm*/
+
+//計算式=(自分の駒の総評価値+自分の置ける場所の総評価値)
+//-(相手の駒の総評価値+相手の置ける場所の総評価値)
 int CarcuEva(int board[SIDE][SIDE],int eva_board[SIDE][SIDE],int turn,int board_info)
 {
 	int my_val=0;
@@ -152,6 +173,8 @@ int CarcuEva(int board[SIDE][SIDE],int eva_board[SIDE][SIDE],int turn,int board_
 	{
 		for(int j=0;j<SIDE;j++)
 		{
+			//隅に駒があれば、計算時に評価値を高くし、
+			//序盤、中盤、終盤で計算による評価値の重さを変える
 			if(board[i][j]==turn)
 			{
 				my_val+=eva_board[i][j];
@@ -202,6 +225,7 @@ int CarcuEva(int board[SIDE][SIDE],int eva_board[SIDE][SIDE],int turn,int board_
 	}
 	return my_val+can_put_val-(enemy_val+enemy_can_put_val);
 }
+
 std::vector<Pos> CanPut_vec(int board[SIDE][SIDE],int turn)
 {
 	std::vector<Pos> pos_vec;
@@ -219,6 +243,8 @@ std::vector<Pos> CanPut_vec(int board[SIDE][SIDE],int turn)
 	}
 	return pos_vec;
 }
+
+//ソートを高速にしたかったのでクイックソートで実装
 std::vector<Pos> QuickSort(std::vector<Pos> target_vec,std::vector<int> sort_vec,int left,int right,int ab_flag)
 {
 	int i=left+1;
@@ -254,6 +280,7 @@ std::vector<Pos> QuickSort(std::vector<Pos> target_vec,std::vector<int> sort_vec
 	}
 	return target_vec;
 }
+
 std::vector<Pos> SortNode(int board[SIDE][SIDE],int eva_board[SIDE][SIDE],int turn,int board_info,std::vector<Pos> pos_vec,int ab_flag)
 {
 	std::vector<int> eva_vec;
@@ -267,13 +294,39 @@ std::vector<Pos> SortNode(int board[SIDE][SIDE],int eva_board[SIDE][SIDE],int tu
 	}
 	return QuickSort(pos_vec,eva_vec,0,pos_vec.size()-1,ab_flag);
 }
-void AlphaBeta(int board[SIDE][SIDE],int turn,int depth,int board_info,bool ga_flag)
+
+//MinMaxより高速そうなAlphaBetaでAI部分の実装
+void AlphaBeta(int board[SIDE][SIDE],int turn,int depth,int white,int black,int board_info,bool ga_flag)
 {
 	best_pos.x=best_pos.y=-1;
 	int eva_board[SIDE][SIDE];
 	if(!ga_flag)
 	{	
-		std::ifstream ifs("../EvaBoard.txt");	
+		int situation;
+		if(turn==BLACK)
+		{
+			if(black>white)
+			{
+				situation=0;
+			}
+			else
+			{
+				situation=1;
+			}
+		}
+		else
+		{
+			if(white>black)
+			{
+				situation=0;
+			}
+			else
+			{
+				situation=1;
+			}
+		}
+		//テスト用
+		std::ifstream ifs("Genes1/gene0"+std::to_string(situation+board_info*2)+".txt");	
 		if(ifs.fail())
 		{
 			printf("Failed to open file.\n");
@@ -301,14 +354,33 @@ void AlphaBeta(int board[SIDE][SIDE],int turn,int depth,int board_info,bool ga_f
 		{
 			for(int j=0;j<SIDE;j++)
 			{
+				int gene_num;
+				int situation;
 				if(turn==BLACK)
 				{
-					eva_board[i][j]=genes[gene1].gene[0][i][j];
+					gene_num=gene1;
+					if(black>white)
+					{
+						situation=0;
+					}
+					else
+					{
+						situation=1;
+					}
 				}
 				else
 				{
-					eva_board[i][j]=genes[gene2].gene[0][i][j];
+					gene_num=gene2;
+					if(white>black)
+					{
+						situation=0;
+					}
+					else
+					{
+						situation=1;
+					}
 				}
+				eva_board[i][j]=genes[gene_num].gene[situation+board_info*2][i][j];
 			}
 		}
 	}
@@ -391,6 +463,20 @@ int Alpha(int board[SIDE][SIDE],int eva_board[SIDE][SIDE],int turn,int depth,int
 	}
 	return alpha;
 }
+
+//置ける場所に適当に置くAI(GAが強いかどうか確かめる用)
+void RandomAI(int board[SIDE][SIDE],int my_turn)
+{
+	best_pos.x=best_pos.y=-1;
+	std::vector<Pos> pos_vec=CanPut_vec(board,my_turn);
+	if(pos_vec.size()!=0)
+	{
+		int val=Rand(0,pos_vec.size()-1);
+		best_pos=pos_vec[val];
+	}
+}
+
+//ga_flagでGAを起動するかきめる
 void Osero(int board[SIDE][SIDE],bool ga_flag)
 {
 	std::string input_turn;
@@ -420,7 +506,7 @@ void Osero(int board[SIDE][SIDE],bool ga_flag)
 	board[SIDE/2][SIDE/2-1]=-1;
 	level=3;
 	print_board(board);
-	UpdatePieces(board,white,black);
+	countPieces(board,white,black);
 	printf("White:%d	Black:%d\n",white,black);
 	do
 	{
@@ -440,13 +526,16 @@ void Osero(int board[SIDE][SIDE],bool ga_flag)
 		Pos input_pos(-1,-1);	
 		if(my_turn==turn||ga_flag)
 		{
-			AlphaBeta(board,turn,level,0,ga_flag);
+			AlphaBeta(board,turn,level,white,black,0,ga_flag);
 			input_pos=best_pos;
 		}
 		else if(!ga_flag)
 		{	
-			puts("Input Coordinates.(path:-1 -1)");
-			std::cin>>input_pos.x>>input_pos.y;
+			//puts("Input Coordinates.(path:-1 -1)");
+			//std::cin>>input_pos.x>>input_pos.y;
+			//テスト用
+			RandomAI(board,turn);
+			input_pos=best_pos;
 		}
 		printf("x:%d y:%d\n",input_pos.x,input_pos.y);	
 		if(input_pos.x==-1&&input_pos.y==-1)
@@ -478,26 +567,37 @@ void Osero(int board[SIDE][SIDE],bool ga_flag)
 			level=SIDE*SIDE-4-turn_cnt;
 		}
 		print_board(board);
-		UpdatePieces(board,white,black);
+		countPieces(board,white,black);
 		printf("White:%d	Black:%d\n",white,black);
 	}while(!isFullBoard(board));
 }
 int main()
 {
-	bool ga_flag=false;
 	char input;
 	//遺伝的アルゴリズムを用いた遺伝子の作成を行うかどうか
 	puts("GA? (y/n)");
 	std::cin>>input;
 	if(input=='y')
 	{
-		ga_flag=true;
 		for(int i=0;i<N_GENES;i++)
 		{
 			genes[i].Init_gene();
 		}
+		//std::vector<std::thread> threads;
+		//並列処理を加えたことによるバグ
+		//for(int thread_cnt=0;thread_cnt<1;thread_cnt++)
+		//{
+	
+		//threads.emplace_back([thread_cnt]()
+		//{
+
 		for(int i=0;i<GENERATION;i++)
 		{
+			for(int j=0;j<N_GENES;j++)
+			{
+				genes[j].score=0;
+				genes[j].gene_population=0;
+			}
 			int excellence_genes[N_GENES]={0};
 			int excellence_total=N_GENES;
 			int current_idx=0;
@@ -528,7 +628,7 @@ int main()
 						if(j==k)continue;
 						gene2=candidate_genes[k];				
 						int board[SIDE][SIDE]={0};
-						Osero(board,ga_flag);
+						Osero(board,true);
 						genes[gene1].Cal_score(board,BLACK);
 						genes[gene2].Cal_score(board,WHITE);
 					}
@@ -551,27 +651,49 @@ int main()
 				if(current_idx>=N_GENES)current_idx=0;
 				cnt++;
 			}
+			if(i==GENERATION)break;
 			puts("SelectGene");
 			genes=Select_gene(genes);
 			puts("SortGene");
 			Sort_genes(genes,0,N_GENES-1);
 			std::reverse(genes.begin(),genes.end());
-			//puts("MultiPoint");
-			//genes=MultiPoint(genes);
-			puts("BlxAlpha");
-			genes=Blx_Alpha(genes);
+			if(i<GENERATION/2)
+			{
+				puts("MultiPoint");
+				genes=MultiPoint(genes);
+			}
+			else
+			{
+				puts("BlxAlpha");
+				genes=Blx_Alpha(genes);
+			}
 			puts("Mutation");
 			genes=Mutation(genes);
-			for(int i=0;i<genes.size();i++)
+			for(int j=0;j<genes.size();j++)
 			{
-				genes[i].gene_save();
+				genes[j].gene_save();
 			}
 		}
+		int max=0;
+		for(int i=1;i<genes.size();i++)
+		{
+			if(genes[max].score<genes[i].score)
+			{
+				max=i;
+			}
+		}
+		printf("Max:%d\n",max);
+		//});
+		//}
+		//for(auto& task:threads)
+		//{
+			//task.join();
+		//}
 	}
 	else
 	{
 		int board[SIDE][SIDE]={0};
-		Osero(board,ga_flag);
+		Osero(board,false);
 	}
 	return 0;
 }
