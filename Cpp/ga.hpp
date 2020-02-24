@@ -6,8 +6,8 @@
 #define CROSSOVER_RATE 	90
 #define MUTATION_RATE 	1
 #define MULTI_POINT	10
-#define N_GENES	10
-#define GENERATION	5
+#define N_GENES	100
+#define GENERATION	50
 #define MINF -1000000000
 #define INF 1000000000
 #define WHITE -1
