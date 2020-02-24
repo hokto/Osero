@@ -6,19 +6,15 @@
 #include<cstring>
 #include<sstream>
 #include<istream>
-#include<fstream>
+#include<fstream> 
 #include<cmath>
 #include<thread>
-
+#include<chrono>
 int Alpha(int board[SIDE][SIDE],int eva_board[SIDE][SIDE],int turn,int depth,int board_info,int alpha,int beta);
 int Beta(int board[SIDE][SIDE],int eva_board[SIDE][SIDE],int turn,int depth,int board_info,int alpha,int beta);
 const int dirX[8]={1,1,0,-1,-1,-1,0,1};
 const int dirY[8]={0,-1,-1,-1,0,1,1,1};
 
-int GA::genes_total=0;
-std::vector<GA> genes(N_GENES);
-int gene1;
-int gene2;
 /*Osero*/
 
 
@@ -85,8 +81,7 @@ bool canReturn(int board[SIDE][SIDE],int turn,Pos currentPos,int dx,int dy)
 		return false;
 	}
 	else if(board[currentPos.y][currentPos.x]==turn)
-	{
-		return true;
+	{ return true;
 	}
 	else
 	{
@@ -137,10 +132,11 @@ bool isFullBoard(int board[SIDE][SIDE])
 }
 
 
-void countPieces(int board[SIDE][SIDE],int &white,int &black)
+void countPieces(int board[SIDE][SIDE],int *white=nullptr,int *black=nullptr)
 {
-	white=0;
-	black=0;
+	if(white==nullptr||black==nullptr)return;
+	*white=0;
+	*black=0;
 	for(int i=0;i<SIDE;i++)
 	{
 		for(int j=0;j<SIDE;j++)
@@ -148,10 +144,10 @@ void countPieces(int board[SIDE][SIDE],int &white,int &black)
 			switch(board[i][j])
 			{
 				case WHITE:
-					white+=1;
+					*white+=1;
 					break;
 				case BLACK:
-					black+=1;
+					*black+=1;
 					break;
 			}	
 		}
@@ -296,7 +292,7 @@ std::vector<Pos> SortNode(int board[SIDE][SIDE],int eva_board[SIDE][SIDE],int tu
 }
 
 //MinMaxより高速そうなAlphaBetaでAI部分の実装
-void AlphaBeta(int board[SIDE][SIDE],int turn,int depth,int white,int black,int board_info,bool ga_flag)
+void AlphaBeta(int board[SIDE][SIDE],int turn,int depth,int white,int black,int board_info,bool ga_flag,int gene1,int gene2,std::vector<GA> genes)
 {
 	best_pos.x=best_pos.y=-1;
 	int eva_board[SIDE][SIDE];
@@ -379,7 +375,7 @@ void AlphaBeta(int board[SIDE][SIDE],int turn,int depth,int white,int black,int 
 					{
 						situation=1;
 					}
-				}
+				} 
 				eva_board[i][j]=genes[gene_num].gene[situation+board_info*2][i][j];
 			}
 		}
@@ -477,7 +473,7 @@ void RandomAI(int board[SIDE][SIDE],int my_turn)
 }
 
 //ga_flagでGAを起動するかきめる
-void Osero(int board[SIDE][SIDE],bool ga_flag)
+void Osero(int board[SIDE][SIDE],bool ga_flag,int gene1=-1,int gene2=-1,std::vector<GA> genes=std::vector<GA>())
 {
 	std::string input_turn;
 	int my_turn=0;
@@ -505,9 +501,9 @@ void Osero(int board[SIDE][SIDE],bool ga_flag)
 	board[SIDE/2-1][SIDE/2]=-1;
 	board[SIDE/2][SIDE/2-1]=-1;
 	level=3;
-	print_board(board);
-	countPieces(board,white,black);
-	printf("White:%d	Black:%d\n",white,black);
+	//print_board(board);
+	countPieces(board,&white,&black);
+	//printf("White:%d	Black:%d\n",white,black);
 	do
 	{
 		if(path_cnt>=2)
@@ -526,7 +522,7 @@ void Osero(int board[SIDE][SIDE],bool ga_flag)
 		Pos input_pos(-1,-1);	
 		if(my_turn==turn||ga_flag)
 		{
-			AlphaBeta(board,turn,level,white,black,0,ga_flag);
+			AlphaBeta(board,turn,level,white,black,0,ga_flag,gene1,gene2,genes);
 			input_pos=best_pos;
 		}
 		else if(!ga_flag)
@@ -537,7 +533,7 @@ void Osero(int board[SIDE][SIDE],bool ga_flag)
 			RandomAI(board,turn);
 			input_pos=best_pos;
 		}
-		printf("x:%d y:%d\n",input_pos.x,input_pos.y);	
+		//printf("x:%d y:%d\n",input_pos.x,input_pos.y);	
 		if(input_pos.x==-1&&input_pos.y==-1)
 		{
 			path_flag=true;
@@ -566,9 +562,9 @@ void Osero(int board[SIDE][SIDE],bool ga_flag)
 		{
 			level=SIDE*SIDE-4-turn_cnt;
 		}
-		print_board(board);
-		countPieces(board,white,black);
-		printf("White:%d	Black:%d\n",white,black);
+		//print_board(board);
+		countPieces(board,&white,&black);
+		//printf("White:%d	Black:%d\n",white,black);
 	}while(!isFullBoard(board));
 }
 int main()
@@ -579,17 +575,25 @@ int main()
 	std::cin>>input;
 	if(input=='y')
 	{
+		/*並列処理*/
+		std::vector<std::thread> threads;
+		for(int thread_cnt=0;thread_cnt<2;thread_cnt++)
+		{
+			
+		threads.push_back(std::thread([thread_cnt]()
+		{
+		/*並列処理*/
+		
+		std::vector<GA> genes(N_GENES);
+		//int GA::genes_total=0;
+		int gene1=0;
+		int gene2=0;
+		//遺伝子を格納するフォルダを作る
+		std::string dir_name=make_dir();
 		for(int i=0;i<N_GENES;i++)
 		{
-			genes[i].Init_gene();
+			genes[i].Init_gene(dir_name,i);
 		}
-		//std::vector<std::thread> threads;
-		//並列処理を加えたことによるバグ
-		//for(int thread_cnt=0;thread_cnt<1;thread_cnt++)
-		//{
-	
-		//threads.emplace_back([thread_cnt]()
-		//{
 
 		for(int i=0;i<GENERATION;i++)
 		{
@@ -598,7 +602,8 @@ int main()
 				genes[j].score=0;
 				genes[j].gene_population=0;
 			}
-			int excellence_genes[N_GENES]={0};
+			int excellence_genes[N_GENES];
+			memset(excellence_genes,0,sizeof(excellence_genes));
 			int excellence_total=N_GENES;
 			int current_idx=0;
 			int candidate_genes[5];
@@ -628,23 +633,15 @@ int main()
 						if(j==k)continue;
 						gene2=candidate_genes[k];				
 						int board[SIDE][SIDE]={0};
-						Osero(board,true);
+						Osero(board,true,gene1,gene2,genes);
 						genes[gene1].Cal_score(board,BLACK);
 						genes[gene2].Cal_score(board,WHITE);
 					}
 				}
-				int max_idx=candidate_genes[0];
-				for(int j=1;j<idx;j++)
+				//選択した遺伝子を候補から外す
+				for(int j=0;j<idx;j++)
 				{
-					if(candidate_genes[max_idx]<candidate_genes[j])
-					{
-						excellence_genes[max_idx]=1;
-						max_idx=j;
-					}
-					else
-					{
-						excellence_genes[j]=1;
-					}
+					excellence_genes[candidate_genes[j]]=1;
 					excellence_total--;
 				}
 				current_idx+=idx;
@@ -666,12 +663,13 @@ int main()
 			{
 				puts("BlxAlpha");
 				genes=Blx_Alpha(genes);
+				puts("Fin_BlxAlpha");
 			}
 			puts("Mutation");
 			genes=Mutation(genes);
 			for(int j=0;j<genes.size();j++)
 			{
-				genes[j].gene_save();
+				genes[j].gene_save(dir_name);
 			}
 		}
 		int max=0;
@@ -683,12 +681,16 @@ int main()
 			}
 		}
 		printf("Max:%d\n",max);
-		//});
-		//}
-		//for(auto& task:threads)
-		//{
-			//task.join();
-		//}
+		/*並列処理*/
+		}));
+		}
+		for(auto& task:threads)
+		{
+			task.join();
+			//処理の一時停止(島モデル実装のため)
+			std::this_thread::sleep_for(std::chrono::milliseconds(500));
+		}
+		/*並列処理*/
 	}
 	else
 	{

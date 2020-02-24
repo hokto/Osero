@@ -25,16 +25,15 @@ class GA
    	public:
 		// 0:序盤有利盤面　1:序盤不利盤面　2:中盤有利盤面　3:中盤不利盤面　4:終盤有利盤面　5:終盤不利盤面
 		int gene[6][SIDE][SIDE];
-		static int genes_total;
 		//選択時に評価するスコア
 		int score=0;
 		//選択時に計算する最終的なこの遺伝子の個体数
 		int gene_population=0;
 		int num;
 		//遺伝子の保存
-		void gene_save();
+		void gene_save(std::string dir_name);
 		//遺伝子の初期化
-		void Init_gene();
+		void Init_gene(std::string dir_name,int ga_i);
 		//評価の対象となるスコアの計算
 		void Cal_score(int board[SIDE][SIDE],int my_turn);
 };
@@ -51,4 +50,7 @@ std::vector<GA> MultiPoint(std::vector<GA> genes);
 std::vector<GA> Blx_Alpha(std::vector<GA> genes);
 //突然変異による遺伝子の変更を行う関数
 std::vector<GA> Mutation(std::vector<GA> genes);
+//遺伝子を格納するフォルダを作成
+std::string make_dir();
+
 #endif

@@ -6,28 +6,48 @@
 #include<fstream>
 #include<vector>
 #include<algorithm>
+#include<sys/stat.h>
 
+std::string make_dir()
+{
+	std::string dir_name="Genes";
+	int dir_i=0;
+	//無限ループにした方がコード汚くならなそうだった
+	while(true)
+	{
+		std::string temp_str=dir_name+std::to_string(dir_i);
+		if(mkdir(temp_str.c_str(),0755)==0)
+		{
+			dir_name=temp_str;
+			break;
+		}
+		dir_i++;
+	}
+	return dir_name;
+}
 
 //遺伝子の保存
-void GA::gene_save()
+void GA::gene_save(std::string dir_name)
 {
 	for(int i=0;i<6;i++)
 	{
-		std::string fileName="Genes/gene"+std::to_string(num)+std::to_string(i)+".txt";
-		std::ofstream write_file; write_file.open(fileName,std::ios::out);
+		std::string fileName=dir_name+"/gene"+std::to_string(num)+std::to_string(i)+".txt";
+		std::ofstream write_file; 
+		write_file.open(fileName,std::ios::out);
 		for(int j=0;j<SIDE;j++)
 		{
 			for(int k=0;k<SIDE;k++)
 			{
 				write_file<<std::to_string(gene[i][j][k])+",";
-			} write_file<<std::endl; }	
+			} 
+			write_file<<std::endl;
+	   	}	
 	}
 }
 //遺伝子の初期化
-void GA::Init_gene()
+void GA::Init_gene(std::string dir_name,int ga_i)
 {
-	num=genes_total;
-	genes_total++;
+	num=ga_i;
 	for(int i=0;i<6;i++)
 	{
 		for(int j=0;j<SIDE/2;j++)
@@ -42,7 +62,7 @@ void GA::Init_gene()
 			}
 		}
 	}
-	gene_save();
+	gene_save(dir_name);
 }
 //評価の対象となるスコアの計算
 void GA::Cal_score(int board[SIDE][SIDE],int my_turn)
@@ -127,7 +147,7 @@ std::vector<GA> Select_gene(std::vector<GA> genes)
 	}
 	int population_total=0;
 	int progeny_total=0;
-	for(int i=0;i<GA::genes_total;i++)
+	for(int i=0;i<N_GENES;i++)
 	{
 		int val=Rand(0,100);
 		if(val<=CROSSOVER_RATE) progeny_total++;
@@ -160,21 +180,26 @@ std::vector<GA> Select_gene(std::vector<GA> genes)
 }
 
 //交叉する遺伝子の組み合わせを決定する
-std::vector<GA> Crossover_genes(std::vector<GA> genes,int &num1,int &num2)
+std::vector<GA> Crossover_genes(std::vector<GA> genes,int* num1=nullptr,int* num2=nullptr)
 {
-	num1=-1,num2=-1;
+	if(num1==nullptr||num2==nullptr)
+	{
+		return genes;
+	}
+	*num1=-1;
+	*num2=-1;
 	for(int i=0;i<genes.size();i++)
 	{
 		if(genes[i].gene_population>0)
 		{
-			if(num1==-1)
+			if(*num1==-1)
 			{
-				num1=i;
+				*num1=i;
 				genes[i].gene_population--;
 			}
 			else
 			{
-				num2=i;
+				*num2=i;
 				genes[i].gene_population--;
 				break;
 			}
@@ -185,7 +210,7 @@ std::vector<GA> Crossover_genes(std::vector<GA> genes,int &num1,int &num2)
 //多点交叉法による遺伝子の交叉
 std::vector<GA> MultiPoint(std::vector<GA> genes)
 {
-	std::vector<GA> next_genes(GA::genes_total);
+	std::vector<GA> next_genes(N_GENES);
 	int progeny_total=0;
 	for(int i=0;i<genes.size();i++)
 	{
@@ -194,7 +219,7 @@ std::vector<GA> MultiPoint(std::vector<GA> genes)
 	}
 	int idx=0;
 	int next_idx=0;
-	for(next_idx=0;next_idx<GA::genes_total-progeny_total;next_idx++)
+	for(next_idx=0;next_idx<N_GENES-progeny_total;next_idx++)
 	{
 		if(genes[idx].gene_population==0)idx=0;
 		next_genes[next_idx]=genes[idx];
@@ -203,7 +228,7 @@ std::vector<GA> MultiPoint(std::vector<GA> genes)
 	while(true)
 	{
 		int parent_num1,parent_num2;
-		genes=Crossover_genes(genes,parent_num1,parent_num2);	
+		genes=Crossover_genes(genes,&parent_num1,&parent_num2);	
 		if(parent_num1==-1&&parent_num2==-1)
 		{
 			break;
@@ -266,9 +291,10 @@ std::vector<GA> MultiPoint(std::vector<GA> genes)
 }
 
 //BLX-α法による遺伝子の交叉
+//next_idxが大きくなり過ぎたたため、その対策をしたが、うまく交叉しなかったらそこが原因かも
 std::vector<GA> Blx_Alpha(std::vector<GA> genes)
 {
-	std::vector<GA> next_genes(GA::genes_total);
+	std::vector<GA> next_genes(N_GENES);
 	int progeny_total=0;
 	for(int i=0;i<genes.size();i++)
 	{
@@ -276,8 +302,8 @@ std::vector<GA> Blx_Alpha(std::vector<GA> genes)
 		if(genes[i].gene_population==0)break;
 	}
 	int idx=0;
-	int next_idx;
-	for(next_idx=0;next_idx<GA::genes_total-progeny_total;next_idx++)
+	int next_idx=0;
+	for(next_idx=0;next_idx<N_GENES-progeny_total;next_idx++)
 	{
 		if(genes[idx].gene_population==0)idx=0;
 		next_genes[next_idx]=genes[idx];
@@ -286,8 +312,9 @@ std::vector<GA> Blx_Alpha(std::vector<GA> genes)
 	int cnt=0;
 	while(true)
 	{
+		if(next_idx>=N_GENES)break;
 		int parent_num1,parent_num2;
-		genes=Crossover_genes(genes,parent_num1,parent_num2);	
+		genes=Crossover_genes(genes,&parent_num1,&parent_num2);	
 		if(parent_num1==-1&&parent_num2==-1)
 		{
 			break;
@@ -314,7 +341,7 @@ std::vector<GA> Blx_Alpha(std::vector<GA> genes)
 					next_genes[next_idx].gene[i][SIDE-j-1][k]=val;
 					next_genes[next_idx].gene[i][j][SIDE-k-1]=val;
 					val=Rand(min_c,max_c);
-					if(next_idx+1<GA::genes_total)
+					if(next_idx+1<N_GENES)
 					{
 						next_genes[next_idx+1].gene[i][j][k]=val;
 						next_genes[next_idx+1].gene[i][SIDE-j-1][SIDE-k-1]=val;
@@ -324,7 +351,9 @@ std::vector<GA> Blx_Alpha(std::vector<GA> genes)
 				}
 			}	
 		}
+		cnt++;
 		next_idx+=2;
+		printf("cnt:%d",cnt);
 	}
 	return next_genes;
 }
